@@ -139,6 +139,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "gmlevel",        SEC_CONSOLE,        true,  &ChatHandler::HandleAccountSetGmLevelCommand,   "", nullptr },
         { "password",       SEC_CONSOLE,        true,  &ChatHandler::HandleAccountSetPasswordCommand,  "", nullptr },
         { "locked",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAccountSetLockedCommand,    "", nullptr },
+        { "email",          SEC_CONSOLE,        true,  &ChatHandler::HandleAccountSetEmailCommand,     "", nullptr },
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };
 

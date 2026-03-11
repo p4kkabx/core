@@ -207,6 +207,48 @@ bool ChatHandler::HandleAccountSetLockedCommand(char* args)
 
     return true;
 }
+// Set password for account
+bool ChatHandler::HandleAccountSetEmailCommand(char* args)
+{
+        // Get the command line arguments  
+    char* accountStr = ExtractOptNotLastArg(&args);  
+  
+    std::string account_name;  
+    uint32 account_id = ExtractAccountId(&accountStr, &account_name);  
+    if (!account_id)  
+        return false;  
+  
+    // Let set email only for lesser (strong) security level  
+    // or to self account  
+    if (GetAccountId() && GetAccountId() != account_id &&  
+        HasLowerSecurityAccount(nullptr, account_id, true))  
+        return false;  
+  
+    char *szEmail = ExtractQuotedOrLiteralArg(&args);  
+    if (!szEmail)  
+        return false;  
+  
+    std::string email = szEmail;  
+      
+    // Basic email validation  
+    if (email.find('@') == std::string::npos)  
+    {  
+        SendSysMessage("Invalid email format.");  
+        SetSentErrorMessage(true);  
+        return false;  
+    }  
+  
+    // Update the email using AccountMgr  
+    LoginDatabase.PExecute("UPDATE `account` SET `email` = '%s' WHERE `id` = '%u'", email.c_str(), account_id);  
+      
+    // Also update the account data cache  
+    sAccountMgr.UpdateAccountData(account_id, account_name, email, false, AccountTypes(sAccountMgr.GetSecurity(account_id)));  
+      
+    PSendSysMessage(LANG_ACCOUNT_SET_EMAIL, account_name.c_str(), account_id, email.c_str());  
+    return true;  
+}
+
+
 
 // Output list of character for account
 bool ChatHandler::HandleAccountCharactersCommand(char* args)
