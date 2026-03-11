@@ -236,11 +236,12 @@ bool ChatHandler::HandleAccountSetEmailCommand(char* args)
         SetSentErrorMessage(true);  
         return false;  
     }
-    //Escaping the email string
-    LoginDatabase.escape_string(email);
+    //Escaping the email string for proper storage in DDBB
+    std::string email_for_db = email;
+    LoginDatabase.escape_string(email_for_db);
     
     // Update the email using AccountMgr  
-    LoginDatabase.PExecute("UPDATE `account` SET `email` = '%s' WHERE `id` = '%u'", email.c_str(), account_id);  
+    LoginDatabase.PExecute("UPDATE `account` SET `email` = '%s' WHERE `id` = '%u'", email_for_db.c_str(), account_id);  
       
     // Also update the account data cache  
     sAccountMgr.UpdateAccountData(account_id, account_name, email, false, AccountTypes(sAccountMgr.GetSecurity(account_id)));  
