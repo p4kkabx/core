@@ -229,15 +229,16 @@ bool ChatHandler::HandleAccountSetEmailCommand(char* args)
         return false;  
   
     std::string email = szEmail;  
-      
     // Basic email validation  
     if (email.find('@') == std::string::npos)  
     {  
         SendSysMessage("Invalid email format.");  
         SetSentErrorMessage(true);  
         return false;  
-    }  
-  
+    }
+    //Escaping the email string
+    LoginDatabase.escape_string(email);
+    
     // Update the email using AccountMgr  
     LoginDatabase.PExecute("UPDATE `account` SET `email` = '%s' WHERE `id` = '%u'", email.c_str(), account_id);  
       
