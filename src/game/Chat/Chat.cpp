@@ -1141,7 +1141,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "",              SEC_TICKETMASTER,  true,  &ChatHandler::HandleGMTicketGetByIdOrNameCommand,    "", nullptr },
         { nullptr,         0,                 false, nullptr,                                             "", nullptr }
     };
-    
+
     static ChatCommand serviceCommandTable[] =
     {
         { "del_characters",     SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleServiceDeleteCharacters,   "", nullptr },
@@ -1412,7 +1412,7 @@ void ChatHandler::LoadRbacPermissions()
                 sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Unknown RBAC permission id %u assigned to command '%s'!", permissionId, command.c_str());
                 continue;
             }
-            
+
             SetPermissionMaskForCommandInTable(commandTable, command.c_str(), permissionId);
 
         } while (result->NextRow());
@@ -2021,7 +2021,7 @@ bool ChatHandler::SetDataForCommandInTable(ChatCommand *commandTable, char const
     return false;
 }
 
-bool ChatHandler::ParseCommands(char const* text)
+ParseCommandResult ChatHandler::ParseCommands(char const* text)
 {
     MANGOS_ASSERT(text);
     MANGOS_ASSERT(*text);
@@ -2030,19 +2030,19 @@ bool ChatHandler::ParseCommands(char const* text)
     if (m_session)
     {
         if (text[0] != '!' && text[0] != '.')
-            return false;
+            return ParseCommandResult::WasNotHandled;
 
         // ignore single . and ! in line
         if (strlen(text) < 2)
-            return false;
+            return ParseCommandResult::WasNotHandled;
 
         if (m_session->GetSecurity() == SEC_PLAYER && !sWorld.getConfig(CONFIG_BOOL_PLAYER_COMMANDS))
-            return false;
+            return ParseCommandResult::WasNotHandled;
     }
 
     // ignore messages staring from many dots.
     if ((text[0] == '.' && text[1] == '.') || (text[0] == '!' && text[1] == '!'))
-        return false;
+        return ParseCommandResult::WasNotHandled;
 
     // skip first . or ! (in console allowed use command with . and ! and without its)
     if (text[0] == '!' || text[0] == '.')
@@ -2074,7 +2074,7 @@ bool ChatHandler::ParseCommands(char const* text)
     else
         ExecuteCommand(text);
 
-    return true;
+    return ParseCommandResult::CommandDetectedAndHandled;
 }
 
 bool ChatHandler::ShowHelpForSubCommands(ChatCommand *table, char const* cmd)
@@ -2161,7 +2161,7 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand *table, char const* cmd)
     return command || childCommands;
 }
 
-bool ChatHandler::isValidChatMessage(char const* message)
+bool ChatHandler::isValidChatMessage(std::string const& msg)
 {
     /*
 
@@ -2175,8 +2175,10 @@ bool ChatHandler::isValidChatMessage(char const* message)
     | will be escaped to ||
     */
 
-    if (strlen(message) > 255)
+    if (msg.length() > 255)
         return false;
+
+    char const* message = msg.c_str();
 
     char const validSequence[6] = "cHhhr";
     char const* validSequenceIterator = validSequence;
