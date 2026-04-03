@@ -1486,6 +1486,14 @@ AccountTypes ChatHandler::GetAccessLevel() const
 
 bool ChatHandler::isAvailable(ChatCommand const& cmd) const
 {
+    // Allow party bot commands when SkipChecks is enabled  
+    if (sWorld.getConfig(CONFIG_BOOL_PARTY_BOT_SKIP_CHECKS) &&   
+        (strcmp(cmd.Name, "partybot") == 0 ||   
+         (!cmd.FullName.empty() && cmd.FullName.find("partybot") != std::string::npos)))  
+    {  
+        return true;  
+    }  
+ 
     // check security level only for simple  command (without child commands)
     if (GetAccessLevel() >= (AccountTypes)cmd.SecurityLevel)
     {
