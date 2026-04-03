@@ -601,25 +601,19 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPackets::Misc::ReclaimCorpse c
 
 void WorldSession::HandleResurrectResponseOpcode(WorldPackets::Misc::ResurrectResponse const& packet)
 {
-    if (!packet.guid) // Cheating attempt
-    {
-        ProcessAnticheatAction("PassiveAnticheat", "Instant resurrect hack detected", CHEAT_ACTION_LOG | CHEAT_ACTION_REPORT_GMS);
-        return;
-    }
-
     if (GetPlayer()->IsAlive())
         return;
 
-    if (packet.status == 0)
+    if (!packet.accept)
     {
-        GetPlayer()->ClearResurrectRequestData();           // reject
+        GetPlayer()->ClearResurrectRequestData(); // player denied rezz attempt
         return;
     }
 
-    if (!GetPlayer()->IsRessurectRequestedBy(packet.guid))
+    if (!GetPlayer()->IsRessurectRequestedBy(packet.resurrectorGuid))
         return;
 
-    GetPlayer()->ResurectUsingRequestData();                // will call spawncorpsebones
+    GetPlayer()->ResurrectUsingRequestData();     // will call SpawnCorpseBones
 }
 
 void WorldSession::HandleAreaTriggerOpcode(WorldPackets::Misc::AreaTrigger const& packet)
@@ -826,15 +820,20 @@ void WorldSession::HandleUpdateAccountData(WorldPackets::Misc::UpdateAccountData
         return;
     }
 
-    nonstd::optional<std::vector<uint8>> dest = Compression::ZLib::Decompress(packet.compressedData, packet.decompressedSize);
-    if (!dest)
+    nonstd::optional<std::vector<uint8>> uncompressedData = Compression::ZLib::Decompress(
+        packet.compressedData,
+        packet.decompressedSize,
+        Compression::ZLib::ChecksumOption::IgnoreChecksum // client might not provide ADLER32 checksum
+    );
+
+    if (!uncompressedData)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "UAD: Failed to decompress account data");
         return;
     }
 
-    std::string adata(reinterpret_cast<char const*>(dest->data()), dest->size());
-    SetAccountData(dataType, adata);
+    std::string uncompressedString(reinterpret_cast<char const*>(uncompressedData->data()), uncompressedData->size());
+    SetAccountData(dataType, uncompressedString);
 }
 
 void WorldSession::HandleRequestAccountData(WorldPackets::Misc::RequestAccountData const& packet)
