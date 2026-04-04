@@ -411,6 +411,7 @@ class ChatHandler
         bool HandleAccountSetGmLevelCommand(char* args);
         bool HandleAccountSetPasswordCommand(char* args);
         bool HandleAccountSetLockedCommand(char* args);
+        bool HandleAccountSetEmailCommand(char* args);
 
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);

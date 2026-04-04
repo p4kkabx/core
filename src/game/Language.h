@@ -932,7 +932,8 @@ enum MangosStrings
     LANG_LOG_FILTERS_STATE_HEADER       = 1027,
     LANG_ALL_LOG_FILTERS_SET_TO_S       = 1028,
     LANG_RA_ONLY_COMMAND                = 1029,
-    // Room for more level 4              1035-1099 not used
+    LANG_ACCOUNT_SET_EMAIL              = 1035,
+    // Room for more level 4              1036-1099 not used
 
     // Level 3 (continue)
     LANG_ACCOUNT_SETADDON               = 1100,
@@ -1131,6 +1132,7 @@ enum MangosStrings
     LANG_GMTICKET_COUNTER_SET           = 2051,
     LANG_COMMAND_TICKETNEW              = 2052,
     LANG_COMMAND_TICKETUPDATED          = 2053,
+    
 
     // FREE IDS                           1600-9999
     LANG_FLEE                           = 5030,
