@@ -281,9 +281,8 @@ void Player::ExecuteTeleportNear()
 }
 
 void WorldSession::HandleMovementOpcodes(WorldPackets::Movement::MovementPacket const& packet)
-{
-    uint32 opcode = packet.GetOpcode();
-
+{      
+    uint32 opcode = packet.GetOpcode();  
     // Do not accept packets sent before this time.
     if (World::GetCurrentMSTime() <= m_moveRejectTime)
         return;
@@ -305,7 +304,8 @@ void WorldSession::HandleMovementOpcodes(WorldPackets::Movement::MovementPacket 
     if (pPlayerMover && pPlayerMover->IsBeingTeleported())
         return;
 
-    const_cast<MovementInfo&>(packet.movementInfo).UpdateTime(World::GetCurrentMSTime());
+    //REVIEW: This has been identified as a possible cause of movement desyncs, but it is required for proper movement timing and cheat detection. We should consider alternatives to avoid the desyncs while keeping the timing and cheat detection working.
+    //const_cast<MovementInfo&>(packet.movementInfo).UpdateTime(World::GetCurrentMSTime());
 
     if (!VerifyMovementInfo(packet.movementInfo))
         return;
@@ -1062,6 +1062,13 @@ void WorldSession::HandleMoverRelocation(Unit* pMover, MovementInfo& movementInf
 {
     Player* const pPlayerMover = pMover->ToPlayer();
 
+    // Calculate squared distance to determine if the movement is significant
+    float dx = pMover->GetPositionX() - movementInfo.pos.x;
+    float dy = pMover->GetPositionY() - movementInfo.pos.y;
+    float dz = pMover->GetPositionZ() - movementInfo.pos.z;
+    float distSq = (dx * dx) + (dy * dy) + (dz * dz);
+
+
     movementInfo.sourceSessionGuid = GetGUID();
     movementInfo.CorrectData();
 
@@ -1109,7 +1116,14 @@ void WorldSession::HandleMoverRelocation(Unit* pMover, MovementInfo& movementInf
                     pPlayerMover->GetSession()->DoLootRelease(lootGuid);
         }
 
-        pPlayerMover->SetPosition(pMover->m_movementInfo.GetPos().x, pMover->m_movementInfo.GetPos().y, pMover->m_movementInfo.GetPos().z, pMover->m_movementInfo.GetPos().o);
+        // Only update the "public" position if movement exceeds the 0.1 threshold
+        // or if the player is in a state that requires constant updates (falling/transport).
+        // This prevents visual flickering caused by floating-point noise in micro-adjustments.
+        bool shouldUpdateSet = (distSq > (0.1f * 0.1f)) || pMover->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLINGFAR | MOVEFLAG_ONTRANSPORT);
+        if (shouldUpdateSet)
+        {
+            pPlayerMover->SetPosition(pMover->m_movementInfo.GetPos().x, pMover->m_movementInfo.GetPos().y, pMover->m_movementInfo.GetPos().z, pMover->m_movementInfo.GetPos().o);
+        }
 
         // Nostalrius - antiundermap1
         if (pMover->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLINGFAR))
