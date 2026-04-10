@@ -36,9 +36,10 @@ class PlayerBroadcaster final
 
     static inline bool CanSkipPacket(uint32 opcode)
     {
-        return (opcode < MSG_MOVE_SET_RUN_SPEED_CHEAT ||
-                (opcode > MSG_MOVE_SET_TURN_RATE &&
-                 opcode != MSG_MOVE_HEARTBEAT));
+        return (opcode < MSG_MOVE_SET_RUN_SPEED_CHEAT ||  
+                (opcode > MSG_MOVE_SET_TURN_RATE &&  
+                opcode != MSG_MOVE_HEARTBEAT &&  
+                opcode != MSG_MOVE_SET_FACING));
     }
 
     uint32 instanceId;
