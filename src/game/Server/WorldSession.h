@@ -61,6 +61,8 @@
 #include "Packets/Taxi.h"
 #include "Packets/Trade.h"
 
+#include <memory>
+
 struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
@@ -360,12 +362,15 @@ class WorldSession
         static void VerifyPacketWasCorrectlyRead(WorldPacket const& recvPacket, ClientPacket const& clientPacket);
 
     public:
+        /// Sends a packet to the client.
+        void SendPacket(std::unique_ptr<ServerPacket> packet);
+        /// @deprecated Use SendPacket with ServerPacket class
         void SendPacket(WorldPacket const* packet);
         void SendMovementPacket(WorldPacket const* packet);
         void SendNotification(char const* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, std::string const& name);
-        void SendPartyResult(PartyOperation operation, std::string const& member, PartyResult res);
+        void SendPartyResult(PartyOperation operation, std::string const& memberName, PartyResult res);
         void SendAreaTriggerMessage(char const* Text, ...) ATTR_PRINTF(2, 3);
         void SendQueryTimeResponse();
 
@@ -463,7 +468,6 @@ class WorldSession
         // Group
         void BuildPartyMemberStatsChangedPacket(Player* player, WorldPacket* data);
         void BuildPartyMemberStatsPacket(Player* player, WorldPacket* data, uint32 updateMask, bool sendAllAuras);
-
     public:                                                 // opcodes handlers
         template<typename TClientPacket>
         static std::unique_ptr<ClientPacket> Handle_GenericRead(WorldPacket& recvPacket)
@@ -543,6 +547,7 @@ class WorldSession
         void HandleTogglePvP(WorldPackets::Misc::TogglePvP const& packet);
         void HandleZoneUpdateOpcode(WorldPackets::Misc::ZoneUpdate const& packet);
         void HandleSetSelectionOpcode(WorldPackets::Misc::SetSelection const& packet);
+        void HandleSetMouseOverTargetOpcode(WorldPackets::Misc::SetTarget const& packet);
         void HandleStandStateChangeOpcode(WorldPackets::Misc::StandStateChange const& packet);
         void HandleEmoteOpcode(WorldPackets::Misc::Emote const& packet);
         void HandleFriendListOpcode(NullClientPacket const& packet);
@@ -585,7 +590,9 @@ class WorldSession
         void HandleGroupDisbandOpcode(NullClientPacket const& packet);
         void HandleLootMethodOpcode(WorldPackets::Group::LootMethod const& packet);
         void HandleLootRoll(WorldPackets::Loot::LootRoll const& packet);
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_4_2
         void HandleRequestPartyMemberStatsOpcode(WorldPackets::Group::RequestPartyMemberStats const& packet);
+#endif
 #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_10_2
         void HandleRaidTargetUpdateOpcode(WorldPackets::Group::RaidTargetUpdate const& packet);
         void HandleRaidReadyCheckOpcode(WorldPackets::Group::RaidReadyCheck const& packet);
@@ -776,7 +783,6 @@ class WorldSession
         void HandleCompleteCinematic(NullClientPacket const& packet);
         void HandleNextCinematicCamera(NullClientPacket const& packet);
 
-        void HandlePageQuerySkippedOpcode(WorldPacket& recvPacket);
         void HandlePageTextQueryOpcode(WorldPackets::Query::QueryPageText const& packet);
 
         void HandleTutorialFlagOpcode(WorldPackets::Misc::TutorialFlag const& packet);
@@ -815,7 +821,9 @@ class WorldSession
         void HandleBattlefieldStatusOpcode(NullClientPacket const& packet);
         void HandleBattleFieldPortOpcode(WorldPackets::Battleground::BattleFieldPort const& packet);
         void HandleBattlefieldListOpcode(WorldPackets::Battleground::BattlefieldListRequest const& packet);
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_4_2
         void HandleLeaveBattlefieldOpcode(WorldPackets::Battleground::LeaveBattlefield const& packet);
+#endif
 
 #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_5_1
         void HandleWardenDataOpcode(WorldPackets::Misc::WardenData const& packet);
@@ -826,8 +834,10 @@ class WorldSession
         void HandleWhoisOpcode(WorldPackets::Query::Whois const& packet);
         void HandleResetInstancesOpcode(NullClientPacket const& packet);
 
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_4_2
         void HandleAreaSpiritHealerQueryOpcode(WorldPackets::Battleground::AreaSpiritHealerQuery const& packet);
         void HandleAreaSpiritHealerQueueOpcode(WorldPackets::Battleground::AreaSpiritHealerQueue const& packet);
+#endif
         void HandleSelfResOpcode(NullClientPacket const& packet);
 
     private:
@@ -881,7 +891,7 @@ class WorldSession
         bool m_playerRecentlyLogout;
         bool m_playerSave;
         uint32 m_exhaustionState;
-        uint32 m_charactersCount;
+        uint32 m_charactersCount;                           // init with max, to prevent character creation before amount is recalculated in CharEnum handler
         uint32 m_characterMaxLevel;
         BigNumber m_sessionKey;
         AccountData m_accountData[NewAccountData::NUM_ACCOUNT_DATA_TYPES];
